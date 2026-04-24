@@ -159,4 +159,4 @@ Deployed endpoints:
 ## Documentation
 
 - Architecture notes: [ARCHITECTURE.md](/D:/projects/nodeflow-engine-bajaj/nodeflow-engine/ARCHITECTURE.md:1)
-- Challenge paper summary: [paper.md](/D:/projects/nodeflow-engine-bajaj/nodeflow-engine/paper.md:1)
+
