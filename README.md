@@ -1,61 +1,49 @@
-# NodeFlow — BFHL Hierarchy Analyser
+# NodeFlow
 
-> SRM Full Stack Engineering Challenge — Round 1
+NodeFlow is a full-stack graph intelligence app built for the BFHL hierarchy challenge. Paste raw node-edge strings like `A->B`, and it turns them into validated hierarchy trees, cycle diagnostics, duplicate-edge reporting, and a visual frontend that makes the output easy to inspect.
 
-A full-stack application that accepts an array of node-edge strings (`A->B`), processes hierarchical relationships, detects cycles, and returns structured insights via a REST API — paired with a polished interactive frontend.
+It is designed to feel stronger than a basic challenge submission: the backend enforces strict parsing and graph rules, while the frontend gives a polished workflow for testing, validating, and understanding the response in real time.
 
----
+## Live Demo
 
-## Live URLs
+- Frontend: https://nodeflow-engine.vercel.app/
+- API: https://nodeflow-engine.onrender.com
 
-| | URL |
-|---|---|
-| **Frontend** | _deploy to Vercel — add URL here_ |
-| **API** | _deploy to Render/Railway — add URL here_ |
-| **GitHub** | _add repo URL here_ |
+## Why This Project Stands Out
 
----
+- Accepts noisy input and separates valid edges, invalid entries, and duplicates cleanly.
+- Detects cycles per connected component instead of flattening everything into one ambiguous result.
+- Builds hierarchy trees with deterministic behavior, including diamond-conflict handling.
+- Mirrors backend validation in the UI so users get feedback before they even submit.
+- Presents results visually, not just as raw JSON.
 
-## Quick Start (Local)
+## Core Capabilities
 
-### Prerequisites
-- Node.js ≥ 18
-- npm ≥ 9
+- `POST /bfhl` processes an input array of relationships and returns:
+  - identity metadata
+  - generated hierarchies
+  - invalid entries
+  - duplicate edges
+  - summary statistics
+- `GET /bfhl` returns the static identity object for quick health verification.
+- Interactive frontend with:
+  - smart text input
+  - live validation preview
+  - response tabs
+  - tree and cycle visualization
 
-### 1 — Backend
+## Live API Example
 
-```bash
-cd backend
-npm install
-node index.js
-# → 🚀  BFHL API running on http://localhost:3001
-```
+### Request
 
-### 2 — Frontend
-
-```bash
-cd frontend
-npm install
-npm run dev
-# → http://localhost:3000
-```
-
-> The frontend reads `NEXT_PUBLIC_API_URL` from `frontend/.env.local` — defaults to `http://localhost:3001`.
-
----
-
-## API Reference
-
-### `POST /bfhl`
-
-**Request**
 ```json
 {
   "data": ["A->B", "A->C", "B->D", "X->Y", "Y->Z", "Z->X", "hello"]
 }
 ```
 
-**Response**
+### Response
+
 ```json
 {
   "user_id": "fullname_ddmmyyyy",
@@ -75,49 +63,67 @@ npm run dev
 }
 ```
 
-### `GET /bfhl`
+## Tech Stack
 
-Returns the identity object (`user_id`, `email_id`, `college_roll_number`).
-
----
+- Backend: Node.js, Express
+- Frontend: Next.js 14, React 18
+- Testing: Jest
+- Hosting: Vercel, Render
 
 ## Project Structure
 
-```
+```text
 nodeflow-engine/
-├── backend/
-│   ├── index.js          ← Express entry point + CORS + routes
-│   ├── constants.js      ← ⚠️ Hardcode your credentials here
-│   ├── parser.js         ← Input validation, trim, dedup
-│   ├── graph.js          ← Adjacency list, diamond guard, BFS groups
-│   ├── cycle.js          ← DFS cycle detection (visited + recursionStack)
-│   ├── tree.js           ← Recursive tree builder + node-count depth
-│   ├── summary.js        ← total_trees, total_cycles, largest_tree_root
-│   └── tests/
-│       ├── parser.test.js
-│       ├── graph.test.js
-│       ├── cycle.test.js
-│       └── edge-cases.test.js  ← full-pipeline integration tests
-│
-├── frontend/
-│   ├── pages/
-│   │   ├── _app.jsx
-│   │   └── index.jsx           ← Main SPA page
-│   ├── components/
-│   │   ├── InputPanel.jsx      ← Smart textarea + sample loader
-│   │   ├── LiveValidator.jsx   ← Real-time parse preview chips
-│   │   ├── TreeViz.jsx         ← SVG tree + cycle visualiser
-│   │   └── ResponseView.jsx    ← Tabbed results view
-│   ├── lib/
-│   │   └── clientParser.js     ← Mirrors backend validation (live preview)
-│   └── styles/
-│       └── globals.css         ← Full design system
-│
-├── ARCHITECTURE.md
-└── README.md
+|-- backend/
+|   |-- index.js
+|   |-- constants.js
+|   |-- parser.js
+|   |-- graph.js
+|   |-- cycle.js
+|   |-- tree.js
+|   |-- summary.js
+|   `-- tests/
+|-- frontend/
+|   |-- pages/
+|   |-- components/
+|   |-- lib/
+|   `-- styles/
+|-- ARCHITECTURE.md
+`-- README.md
 ```
 
----
+## Local Setup
+
+### Prerequisites
+
+- Node.js 18+
+- npm 9+
+
+### Backend
+
+```bash
+cd backend
+npm install
+npm start
+```
+
+The API runs on `http://localhost:3001`.
+
+### Frontend
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+The app runs on `http://localhost:3000`.
+
+Set `frontend/.env.local` if you want to point the UI at a custom API:
+
+```env
+NEXT_PUBLIC_API_URL=http://localhost:3001
+```
 
 ## Running Tests
 
@@ -126,56 +132,31 @@ cd backend
 npm test
 ```
 
-All 4 test files run automatically:
+Current backend coverage includes parser rules, graph construction, cycle detection, and integration-style edge cases.
 
-| File | What it covers |
-|---|---|
-| `parser.test.js` | Format validation, trimming, self-loops, exact-once dedup |
-| `graph.test.js` | Adjacency, root detection, diamond, group splitting, order |
-| `cycle.test.js` | DFS correctness, cross-edge vs back-edge, false positives |
-| `edge-cases.test.js` | Full pipeline integration, spec example, all strict rules |
+## Processing Rules
 
----
+- Valid edge format: `A->B`
+- Only single uppercase letters are accepted as node names.
+- Self-loops like `A->A` are treated as invalid.
+- Whitespace is trimmed before validation.
+- Duplicate edges are accepted once and then reported in `duplicate_edges`.
+- Diamond conflicts keep the first parent and discard later conflicting parents.
+- Cycles are detected per connected group.
+- Depth is measured by node count on the longest path.
+- `has_cycle` appears only when true.
+- `depth` appears only for non-cyclic hierarchies.
 
-## Key Processing Rules
+## Submission Notes
 
-| Rule | Behaviour |
-|---|---|
-| Valid format | `/^[A-Z]->[A-Z]$/` — single uppercase letter each side |
-| Self-loop `A->A` | → `invalid_entries` |
-| Whitespace `" A->B "` | Trim first, then validate → **valid** |
-| Duplicate edge (3×) | First used, pushed to `duplicate_edges` **once** |
-| Diamond `A->D` + `B->D` | First parent wins; second **silently discarded** |
-| Cycle detection | DFS with `visited` + `recursionStack` per connected group |
-| Pure cycle root | Lex-smallest node in the group |
-| Depth | **Node count** on longest path — `A→B→C = 3`, not 2 |
-| `has_cycle` field | Present **only** when `true` — never set to `false` |
-| `depth` field | Present **only** on non-cyclic trees |
+Identity constants are hardcoded in [backend/constants.js](/D:/projects/nodeflow-engine-bajaj/nodeflow-engine/backend/constants.js:1), which matches the challenge requirements for static response fields.
 
----
+Deployed endpoints:
 
-## ⚠️ Before Submitting
+- Frontend on Vercel: https://nodeflow-engine.vercel.app/
+- Backend on Render: https://nodeflow-engine.onrender.com
 
-1. Open `backend/constants.js` and replace the placeholder credentials with your real ones:
-   ```js
-   USER_ID: "yourname_ddmmyyyy",   // e.g. "madanbajaj_24042004"
-   EMAIL_ID: "you@srmist.edu.in",
-   COLLEGE_ROLL_NUMBER: "RA2211XXXXXXX",
-   ```
-2. Deploy backend to Render or Railway
-3. Set `NEXT_PUBLIC_API_URL` in Vercel environment variables to your hosted API URL
-4. Deploy frontend to Vercel
-5. Run the full spec example against the live API and verify the response matches exactly
+## Documentation
 
----
-
-## Tech Stack
-
-| Layer | Technology |
-|---|---|
-| Backend | Node.js + Express |
-| Frontend | Next.js 14 + React 18 |
-| Styling | Vanilla CSS (design system) |
-| Testing | Jest |
-| Backend hosting | Render / Railway |
-| Frontend hosting | Vercel |
+- Architecture notes: [ARCHITECTURE.md](/D:/projects/nodeflow-engine-bajaj/nodeflow-engine/ARCHITECTURE.md:1)
+- Challenge paper summary: [paper.md](/D:/projects/nodeflow-engine-bajaj/nodeflow-engine/paper.md:1)
